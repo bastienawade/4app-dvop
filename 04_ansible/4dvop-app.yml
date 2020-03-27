@@ -1,0 +1,72 @@
+---
+- name: 4dvop
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Add epel-release repo
+    yum:
+      name: epel-release
+      state: present
+
+  - name: Install nginx
+    yum:
+      name: nginx
+      state: present
+
+  - name: Start NGiNX
+    service:
+      name: nginx
+      state: started
+
+  - name: Install git
+    yum:
+      name: git
+      state: present
+
+  - name: Remove default website 
+    shell: /bin/rm -rf /usr/share/nginx/html/*
+
+  - name: Cloning the website
+    git:
+      repo: https://github.com/diranetafen/static-website-example.git
+      dest: /usr/share/nginx/html
+      force: yes
+  - name: authorizing http
+    firewalld:
+      service: http
+      state: enabled
+
+  - name: authorizing https
+    firewalld:
+      service: https
+      state: enabled
+
+  - name: nginx listen on port 8080
+    lineinfile:
+      path: /etc/nginx/nginx.conf
+      state: present
+      regexp: '^Listen '
+      insertafter: '^#Listen '
+      line: Listen 8080
+
+  - name: reload nginx
+    action: service name=nginx state=reloaded
+
+  - name: Install haproxy
+    yum:
+      name: haproxy
+      state: present
+
+  - name: Start haproxy
+    service:
+      name: haproxy
+      state: started
+
+  - name: Copy haproxy conf
+    copy:
+      src: /home/supinfo/04_ansible/files/haproxy.cfg
+      dest: /etc/haproxy/haproxy.cfg
+
+  - name: reload haproxy
+    action: service name=haproxy state=reloaded
